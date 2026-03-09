@@ -52,6 +52,17 @@ fastify.get("/api/v1/resume-details", async (request, reply) => {
   };
 });
 
+fastify.get("/health", async (request, reply) => {
+  
+  const body = {
+    status: "ok",
+    uptime: process.uptime(),
+    node: process.version,
+    timestamp: new Date().toISOString(),
+  };
+  return reply.code(200).send(body);
+});
+
 // Start the server
 const start = async () => {
   try {
