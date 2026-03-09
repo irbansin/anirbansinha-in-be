@@ -1,7 +1,13 @@
 import Fastify from "fastify";
-import { userInfo } from "node:os";
+import dotenv from "dotenv";
+dotenv.config();
 
 const fastify = Fastify({ logger: true });
+
+const PORT = process.env.PORT || 3000;
+const HOST =
+  process.env.HOST ||
+  (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 
 // 1. A simple GET endpoint (Reading data)
 fastify.get("/api/v1/greet", async (request, reply) => {
@@ -29,8 +35,9 @@ fastify.get("/api/v1/resume-details", async (request, reply) => {
 // Start the server
 const start = async () => {
   try {
-    await fastify.listen({ port: 3000 });
-    console.log("Server running at http://localhost:3000/");
+    fastify.listen({ port: Number(PORT), host: HOST }).then((address) => {
+      fastify.log.info(`Server listening at ${address}`);
+    });
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
