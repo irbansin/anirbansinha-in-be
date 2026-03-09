@@ -52,7 +52,7 @@ fastify.get("/api/v1/resume-details", async (request, reply) => {
   };
 });
 
-fastify.get("/health", async (request, reply) => {
+fastify.get("/api/v1/health", async (request, reply) => {
   
   const body = {
     status: "ok",
