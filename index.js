@@ -29,19 +29,37 @@ fastify.register(cors, {
   },
 });
 
-// 1. A simple GET endpoint (Reading data)
-fastify.get("/api/v1/greet", async (request, reply) => {
-  return { message: "Welcome to your first API endpoint!" };
-});
+fastify.get("/api/v1/projects", async (request, reply) => {
+  const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
+  if (!NETLIFY_TOKEN) {
+    request.log.error("NETLIFY_TOKEN not configured");
+    return reply.code(500).send({ error: "NETLIFY_TOKEN not configured" });
+  }
 
-// 2. A POST endpoint (Sending data to the server)
-fastify.post("/api/v1/echo", async (request, reply) => {
-  const { name } = request.body;
-  return { message: `Hello, ${name}! Data received.` };
+  try {
+    const response = await fetch("https://api.netlify.com/api/v1/sites", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${NETLIFY_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => response.statusText);
+      request.log.error(`Netlify API error: ${response.status} ${text}`);
+      return reply.code(response.status).send({ error: text });
+    }
+
+    const data = await response.json();
+    return reply.code(200).send(data);
+  } catch (err) {
+    request.log.error(err);
+    return reply.code(502).send({ error: err?.message || "Failed to fetch projects" });
+  }
 });
 
 fastify.get("/api/v1/resume-details", async (request, reply) => {
-  console.log(request);
   return {
     message: {
       userInfo: {
