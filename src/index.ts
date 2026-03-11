@@ -6,11 +6,11 @@ dotenv.config();
 
 const fastify = Fastify({ logger: true });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || "3000";
 const HOST =
   process.env.HOST ||
   (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
-// CORS setup
+
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || "")
   .split(",")
   .map((s) => s.trim())
@@ -18,13 +18,8 @@ const CORS_ORIGIN = (process.env.CORS_ORIGIN || "")
 
 fastify.register(cors, {
   origin: (origin, cb) => {
-    // allow non-browser tools (curl, server-to-server) when origin is undefined
     if (!origin) return cb(null, true);
-    // if no whitelist defined, allow all (dev / simple setup)
-    // if (CORS_ORIGIN.length === 0) return cb(null, true);
-    // allow if origin is in whitelist
     if (CORS_ORIGIN.includes(origin)) return cb(null, true);
-    // otherwise block
     cb(new Error("Not allowed by CORS"), false);
   },
 });
@@ -53,13 +48,15 @@ fastify.get("/api/v1/projects", async (request, reply) => {
 
     const data = await response.json();
     return reply.code(200).send(data);
-  } catch (err) {
-    request.log.error(err);
-    return reply.code(502).send({ error: err?.message || "Failed to fetch projects" });
+  } catch (err: unknown) {
+    request.log.error(err as Error);
+    return reply
+      .code(502)
+      .send({ error: (err as Error)?.message || "Failed to fetch projects" });
   }
 });
 
-fastify.get("/api/v1/resume-details", async (request, reply) => {
+fastify.get("/api/v1/resume-details", async () => {
   return {
     message: {
       userInfo: {
@@ -119,7 +116,7 @@ fastify.get("/api/v1/resume-details", async (request, reply) => {
               "Backend API development with Spring Boot, OracleDB, Kafka.",
             ],
           },
-          {
+                    {
             companyName: "EPAM Systems",
             role: "Senior Software Development Engineer",
             dates: "Feb 2023 – Apr 2024",
@@ -176,6 +173,7 @@ fastify.get("/api/v1/resume-details", async (request, reply) => {
               "Improved website performance by 70% via SSR and bundle size reductions.",
             ],
           },
+
         ],
         education: [
           {
@@ -212,14 +210,12 @@ fastify.get("/api/v1/health", async (request, reply) => {
   return reply.code(200).send(body);
 });
 
-// Start the server
 const start = async () => {
   try {
-    fastify.listen({ port: Number(PORT), host: HOST }).then((address) => {
-      fastify.log.info(`Server listening at ${address}`);
-    });
+    await fastify.listen({ port: Number(PORT), host: HOST });
+    fastify.log.info(`Server listening`);
   } catch (err) {
-    fastify.log.error(err);
+    fastify.log.error(err as Error);
     process.exit(1);
   }
 };
