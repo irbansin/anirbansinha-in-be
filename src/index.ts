@@ -1,216 +1,34 @@
 import Fastify from "fastify";
-import dotenv from "dotenv";
 import cors from "@fastify/cors";
+import { registerRoutes } from "./routes";
+import { config } from "./config";
 
-dotenv.config();
+const PORT = config.PORT;
+const HOST = config.HOST;
 
-const fastify = Fastify({ logger: true });
+function buildServer() {
+  const fastify = Fastify({ logger: true });
 
-const PORT = process.env.PORT || "3000";
-const HOST =
-  process.env.HOST ||
-  (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
+  const CORS_ORIGIN = (config.CORS_ORIGIN || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
-const CORS_ORIGIN = (process.env.CORS_ORIGIN || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
-fastify.register(cors, {
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    if (CORS_ORIGIN.includes(origin)) return cb(null, true);
-    cb(new Error("Not allowed by CORS"), false);
-  },
-});
-
-fastify.get("/api/v1/projects", async (request, reply) => {
-  const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
-  if (!NETLIFY_TOKEN) {
-    request.log.error("NETLIFY_TOKEN not configured");
-    return reply.code(500).send({ error: "NETLIFY_TOKEN not configured" });
-  }
-
-  try {
-    const response = await fetch("https://api.netlify.com/api/v1/sites", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${NETLIFY_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const text = await response.text().catch(() => response.statusText);
-      request.log.error(`Netlify API error: ${response.status} ${text}`);
-      return reply.code(response.status).send({ error: text });
-    }
-
-    const data = await response.json();
-    return reply.code(200).send(data);
-  } catch (err: unknown) {
-    request.log.error(err as Error);
-    return reply
-      .code(502)
-      .send({ error: (err as Error)?.message || "Failed to fetch projects" });
-  }
-});
-
-fastify.get("/api/v1/resume-details", async () => {
-  return {
-    message: {
-      userInfo: {
-        name: "Anirban Sinha",
-        jobTitle: "Software Development Engineer",
-        city: "Bengaluru",
-        state: "Karnataka",
-        phones: ["94824 10312", "87594 71790"],
-        links: [
-          {
-            linkType: "linkedin",
-            link: "https://linkedin.com/in/irbansin",
-            linkText: "linkedIn.com/in/irbansin",
-            icon: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
-          },
-          {
-            linkType: "github",
-            link: "https://github.com/irbansin",
-            linkText: "github.com/irbansin",
-            icon: "https://cdn-icons-png.flaticon.com/512/733/733553.png",
-          },
-          {
-            linkType: "website",
-            link: "https://anirbansinha.in",
-            linkText: "anirbansinha.in",
-            icon: "https://cdn-icons-png.flaticon.com/512/1006/1006771.png",
-          },
-          {
-            linkType: "email",
-            link: "mailto:reach@anirbansinha.in",
-            linkText: "reach@anirbansinha.in",
-            icon: "https://cdn-icons-png.flaticon.com/512/732/732200.png",
-          },
-        ],
-        country: "India",
-        summary:
-          "Experienced Software Engineer specializing in JavaScript, Angular, React, Node.js, Java. Passionate about building scalable, high-performance applications with a strong focus on frontend and backend development. Proven ability to lead teams, mentor developers, and deliver impactful solutions.",
-        technicalSkills: {
-          technicalLanguages: ["JavaScript", "TypeScript", "Java", "Python"],
-          backendFrameworks: ["Node.js", "ExpressJS", "Spring", "Spring Boot"],
-          frontEndFrameworks: ["Angular", "React", "NextJS"],
-          databases: ["PostgreSQL", "MongoDB", "DynamoDB", "Redis"],
-          testing: ["Jest", "Jasmine", "Karma", "JUnit"],
-          ORM: ["Prisma", "Hibernate"],
-          Cloud: ["AWS", "GCP"],
-          Others: ["Microservices", "REST APIs", "Agile", "Git", "Monorepo"],
-        },
-        professionalExperience: [
-          {
-            companyName: "Ivy",
-            role: "Senior Software Development Engineer",
-            dates: "Apr 2024 – May 2025",
-            location: "Pune, India",
-            responsibilities: [
-              "Platform for VIP Customers for online Casino Application — developed module to enable VIP customers to get better deals using Angular, NxCloud, RxJS; mentored junior developers.",
-              "Data Migration — prepared production DB for new VIP field (MongoDB, OracleDB).",
-              "Backend API development with Spring Boot, OracleDB, Kafka.",
-            ],
-          },
-                    {
-            companyName: "EPAM Systems",
-            role: "Senior Software Development Engineer",
-            dates: "Feb 2023 – Apr 2024",
-            location: "Hyderabad, India",
-            responsibilities: [
-              "Led development of customer acquisition platform for a digital-first bank (Angular frontend, Java backend).",
-              "Built an AI chatbot for HR queries — React frontend, NodeJS backend with LangChain.",
-            ],
-          },
-          {
-            companyName: "Synechron",
-            role: "Technical Lead",
-            dates: "Jul 2022 – Dec 2022",
-            responsibilities: [
-              "Frontend Technical Lead for React applications of a major bank — drove architecture and implementation decisions for RBAC features.",
-            ],
-          },
-          {
-            companyName: "EasyEat",
-            role: "Technical Lead",
-            dates: "Jan 2022 – Jul 2022",
-            responsibilities: [
-              "Central Menu Management System (CMM) for Restaurant Partner Application — Angular, Node.js, AWS.",
-              "Led Internationalization of Restaurant Partner Application — Angular, Node.js, AWS, Lokalize.",
-              "Maintenance of User Food Ordering app — React, NextJS.",
-            ],
-          },
-          {
-            companyName: "Maximl",
-            role: "Senior Software Development Engineer",
-            dates: "Mar 2021 – Jan 2022",
-            location: "Chennai, India",
-            responsibilities: [
-              "Jobs Module for Connected Workers Platform — listing, tracking and reporting progress on daily jobs. Technologies: Angular, Ionic, microfrontends, TailwindCSS.",
-            ],
-          },
-          {
-            companyName: "eReinsure",
-            role: "Software Engineer",
-            dates: "Oct 2019 – Mar 2021",
-            location: "Hyderabad, India",
-            responsibilities: [
-              "Negotiation Platform for Reinsurers — built negotiation platform using Angular, Material UI.",
-              "Filing Cabinet for Reinsurers — archive storage for negotiation records (Angular, Material UI, RxJS, NgRx).",
-              "Backend API development with Spring Boot.",
-            ],
-          },
-          {
-            companyName: "Tata Consultancy Services",
-            role: "System Engineer",
-            dates: "Oct 2017 – Oct 2019",
-            responsibilities: [
-              "CRM frontend leveraging MS Dynamics API — developed CRM application using React and MS Dynamics API.",
-              "Improved website performance by 70% via SSR and bundle size reductions.",
-            ],
-          },
-
-        ],
-        education: [
-          {
-            institution: "Indian Institute of Technology, Jodhpur",
-            degree: "MTech, Data Engineering and Artificial Intelligence",
-            startYear: "2024",
-            endYear: "2026",
-          },
-          {
-            institution: "Asansol Engineering College",
-            degree: "BTech, Computer Engineering",
-            startYear: "2013",
-            endYear: "2017",
-          },
-        ],
-        achievements: [
-          'TCS "On The Spot" Award',
-          "Global Student Entrepreneurship Finalist",
-          "Tata First Dot Top 25 Startups",
-        ],
-        certifications: [],
-      },
+  fastify.register(cors, {
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (CORS_ORIGIN.includes(origin)) return cb(null, true);
+      cb(new Error("Not allowed by CORS"), false);
     },
-  };
-});
+  });
 
-fastify.get("/api/v1/health", async (request, reply) => {
-  const body = {
-    status: "ok",
-    uptime: process.uptime(),
-    node: process.version,
-    timestamp: new Date().toISOString(),
-  };
-  return reply.code(200).send(body);
-});
+  registerRoutes(fastify);
+
+  return fastify;
+}
 
 const start = async () => {
+  const fastify = buildServer();
   try {
     await fastify.listen({ port: Number(PORT), host: HOST });
     fastify.log.info(`Server listening`);
@@ -219,4 +37,5 @@ const start = async () => {
     process.exit(1);
   }
 };
+
 start();
